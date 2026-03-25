@@ -37,7 +37,7 @@ def poly_centroid_2d(vertices, signed_area):
     return res
 
 if __name__ == "__main__":
-    import Random_Poly as poly_gen
+    import random_poly as poly_gen
     np.random.seed(67)
     # polygon = np.random.uniform(0, 2,(7,2))
     # polygon = np.array([
