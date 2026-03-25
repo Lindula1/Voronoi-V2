@@ -23,6 +23,22 @@ def generate_inscribed_square(center, radius: float | int) -> List:
     res.append([center[0] - radius, center[1] - radius])
     return res
 
+def generate_inscribed_rectangle_sym(center, rx, ry) -> List:
+    x_sn = y_sn = 1
+    res = []
+    for i in range(2):
+        y_sn *= -1
+
+        for j in range(2):
+            x_sn *= -1
+
+            res.append([center[0] +  x_sn*rx, center[1] + y_sn*ry])
+
+    res[2], res[3] = res[3], res[2]
+    res.append([center[0] - rx, center[1] - ry])
+    print(res)
+    return res
+
 def generate_polygon(center: Tuple[float, float], avg_radius: float,
                      irregularity: float, spikiness: float,
                      num_vertices: int) -> List[Tuple[float, float]]:

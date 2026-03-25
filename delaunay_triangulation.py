@@ -1,5 +1,6 @@
 import math
 import random
+from typing import Any
 
 from matplotlib import pyplot as plt
 import numpy as np
@@ -7,79 +8,7 @@ import pandas as pd
 import matplotlib.patches as patch
 from numpy import ndarray
 
-from random_poly import generate_inscribed_square
-
-
-class DelaunayV2:
-    def __init__(self, points, grid=False):
-        self.grid = grid
-        self.seed_points = points
-        self.bin_grid = None
-
-    def triangulate(self, points=None):
-        if points is None:
-            points = self.seed_points
-        normalised_points = self.normalize_points(points)
-        bin_numbers = self.generate_bins_nums_2d(points, points)
-        sorted_points = self.sort_bins(points, bin_numbers)
-        binned_points = self.bin_points(sorted_points, np.sort(bin_numbers))
-
-        return binned_points
-
-    def generate_bin_grid(self, bin_indices, points):
-        grid_n = max(np.max(bin_indices, axis=1) + 1)
-        max_reach = max(np.max(points, axis=1))
-        r = (max_reach/grid_n)/2
-        polygons = []
-        for i in range(1, grid_n*2, 2):
-            for j in range(1, grid_n*2, 2):
-                center = [i*r, j*r]
-                polygons.append(generate_inscribed_square(center, r))
-
-        self.bin_grid = np.array(polygons)
-
-
-    def normalize_points(self, points):
-        """
-        Normalize seed points so they lie between 0 and 1.
-        Done with a uniform scaling to ensure all points
-        retain their positions.
-        """
-        max_points = np.max(points, axis=0) - np.min(points, axis=0)
-        res = (points - np.min(points, axis=0)[np.newaxis,:])/max_points[np.newaxis,:]
-        return res
-
-    def bin_points(self, points, bins):
-        # bin_arr, bin_sizes = np.unique(bins, return_counts=True)
-        point_bins = [[] for _ in range(max(bins))]
-
-        for i, item in enumerate(bins):
-            point_bins[item-1].append(points[i])
-
-        for k, arr in enumerate(point_bins):
-            point_bins[k] = np.array(arr)
-            # print(k, np.array(arr))
-
-        return point_bins
-
-    def generate_bins_nums_2d(self, norm_points, raw_points):
-        N = norm_points.shape[0] # point number
-        n = int(np.sqrt(N))
-        bin_indices = ((0.99*n*norm_points)/np.max(norm_points, axis=0)[np.newaxis, :]).astype(int)
-
-        if self.grid:
-            self.generate_bin_grid(bin_indices, raw_points)
-
-        bins = np.zeros(N, dtype=int)
-        for i in range(N):
-            bins[i] = bin_indices[i,1] * n + bin_indices[i,0] + 1 if bin_indices[i,1] % 2 == 0 else (bin_indices[i,1] + 1)* n - bin_indices[i,0]
-
-        return bins
-
-    def sort_bins(self, points, bin_numbers):
-        sorted_points = knuth_counting_sort_numpy(points, bin_numbers)
-        return sorted_points
-
+from random_poly import generate_inscribed_rectangle_sym
 
 def knuth_counting_sort_numpy(coords: np.ndarray, ranks: np.ndarray) -> np.ndarray:
     """
@@ -122,22 +51,107 @@ def knuth_counting_sort_numpy(coords: np.ndarray, ranks: np.ndarray) -> np.ndarr
 
     return output
 
+def generate_bin_indices(norm_points):
+    n_points = norm_points.shape[0]  # point number
+    n = int(np.sqrt(n_points))
+    res = ((0.99 * n * norm_points) / np.max(norm_points, axis=0)[np.newaxis, :]).astype(int)
+
+    return res
+
+
+def normalize_points(points):
+    """
+    :param points:
+    Normalize seed points so they lie between 0 and 1.
+    Done with a uniform scaling to ensure all points
+    retain their positions.
+    """
+    max_points = np.max(points, axis=0) - np.min(points, axis=0)
+    res = (points - np.min(points, axis=0)[np.newaxis,:])/max_points[np.newaxis,:]
+    return res
+
+
+def bin_points(points, bins):
+    """
+    :param points:
+    :param bins:
+    :return:
+    """
+    point_bins = [[] for _ in range(max(bins))]
+
+    for i, item in enumerate(bins):
+        point_bins[item-1].append(points[i])
+
+    for k, arr in enumerate(point_bins):
+        point_bins[k] = np.array(arr)
+
+    return point_bins
+
+
+def sort_bins(points, bin_numbers):
+    sorted_points = knuth_counting_sort_numpy(points, bin_numbers)
+    return sorted_points
+
+
+class DelaunayV2:
+    def __init__(self, points : ndarray, grid=False):
+        self.grid = grid
+        self.seed_points = points
+        self.bin_grid = None
+
+    def triangulate(self, points : ndarray = None):
+        if points is None:
+            points = self.seed_points
+
+        normalised_points = normalize_points(points)
+        bin_numbers = self.generate_bins_nums_2d(normalised_points, points)
+        sorted_points = sort_bins(points, bin_numbers)
+        binned_points = bin_points(sorted_points, np.sort(bin_numbers))
+
+        return binned_points
+
+    def generate_bin_grid(self, bin_indices : ndarray, points : ndarray):
+        grid_n = max(np.max(bin_indices, axis=1)+1)
+        max_r_x, max_r_y = np.max(points[:,0])/grid_n, np.max(points[:,1])/grid_n
+        print(max_r_x, max_r_y)
+        polygons = []
+        for i in range(1, grid_n):
+            for j in range(1, grid_n):
+                center = [i*max_r_x, j*max_r_y]
+                polygons.append(generate_inscribed_rectangle_sym(center, max_r_x, max_r_y))
+
+        self.bin_grid = np.array(polygons)
+
+    def generate_bins_nums_2d(self, bin_indices, raw_points):
+        num_points = raw_points.shape[0]
+        n = int(np.sqrt(num_points))
+
+        if self.grid:
+            self.generate_bin_grid(bin_indices, raw_points)
+
+        bins = np.zeros(num_points, dtype=int)
+        for i in range(num_points):
+            bins[i] = bin_indices[i,1] * n + bin_indices[i,0] + 1 if bin_indices[i,1] % 2 == 0 else (bin_indices[i,1] + 1)* n - bin_indices[i,0]
+
+        return bins
+
+
 
 if __name__ == "__main__":
     """Seed Variables"""
     np.random.seed(69)
     random.seed(69)
-    seed_point_num = 20
+    seed_point_num = 14
 
     """Generate Delaunay"""
     seed_points = np.random.uniform(0, 10, (seed_point_num,2))
-    delaunay = DelaunayV2(seed_points, True)
+    delaunay = DelaunayV2(seed_points)
     triangulated = delaunay.triangulate()
 
     colours = [(random.random(), random.random(), random.random()) for i in range(seed_point_num)]
 
-    grid_points = delaunay.bin_grid
-    grid = [patch.Polygon(_, fill=False) for _ in grid_points]
+    # grid_points = delaunay.bin_grid
+    # grid = [patch.Polygon(_, fill=False) for _ in grid_points]
 
     """ Graphing """
     fig, ax = plt.subplots(1, 1)
@@ -147,13 +161,9 @@ if __name__ == "__main__":
             continue
         ax.plot(triangulated[l][:,0], triangulated[l][:,1], "o", color=colours[l])
 
-    # ax.plot(seed_points[:,0], seed_points[:,1], "o")
-    # ax.figure(2, figsize=(8,8))
-    # ax.plot(triangulated[:,0], triangulated[:,1], "o")
-
     # Graphing grid
-    for f in grid:
-        ax.add_patch(f)
+    # for f in grid:
+    #     ax.add_patch(f)
 
 
     plt.show()
