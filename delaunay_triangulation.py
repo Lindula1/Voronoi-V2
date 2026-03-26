@@ -1,16 +1,15 @@
 import math
 import random
-from typing import Any
 
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 import matplotlib.patches as patch
-from numpy import ndarray
+import numpy.typing as npt
 
 from random_poly import generate_inscribed_rectangle_sym
 
-def knuth_counting_sort_numpy(coords: np.ndarray, ranks: np.ndarray) -> np.ndarray:
+def knuth_counting_sort_numpy(coords: npt.NDArray, ranks: npt.NDArray) -> np.ndarray:
     """
     ---Produced using AI--- (I'm lazy)
     Knuth's Counting Sort (Algorithm C) for NumPy arrays.
@@ -51,7 +50,13 @@ def knuth_counting_sort_numpy(coords: np.ndarray, ranks: np.ndarray) -> np.ndarr
 
     return output
 
-def generate_bin_indices(norm_points):
+"""Depreciated until further development"""
+def __generate_bin_indices(norm_points : npt.NDArray) -> np.ndarray:
+    """
+    :param norm_points:
+    :return:
+    :rtype:
+    """
     n_points = norm_points.shape[0]  # point number
     n = int(np.sqrt(n_points))
     res = ((0.99 * n * norm_points) / np.max(norm_points, axis=0)[np.newaxis, :]).astype(int)
@@ -59,19 +64,21 @@ def generate_bin_indices(norm_points):
     return res
 
 
-def normalize_points(points):
+def _normalize_points(points : npt.NDArray) -> np.ndarray:
     """
     :param points:
+    :return:
     Normalize seed points so they lie between 0 and 1.
     Done with a uniform scaling to ensure all points
     retain their positions.
     """
     max_points = np.max(points, axis=0) - np.min(points, axis=0)
     res = (points - np.min(points, axis=0)[np.newaxis,:])/max_points[np.newaxis,:]
+
     return res
 
 
-def bin_points(points, bins):
+def _bin_points(points : npt.NDArray, bins : npt.NDArray) -> npt.ArrayLike:
     """
     :param points:
     :param bins:
@@ -88,29 +95,54 @@ def bin_points(points, bins):
     return point_bins
 
 
-def sort_bins(points, bin_numbers):
+def _sort_bins(points : npt.NDArray, bin_numbers : npt.NDArray) -> np.ndarray:
+    """
+    :param points:
+    :param bin_numbers:
+    :return:
+    """
     sorted_points = knuth_counting_sort_numpy(points, bin_numbers)
     return sorted_points
 
 
 class DelaunayV2:
-    def __init__(self, points : ndarray, grid=False):
+    def __init__(self, points : npt.NDArray, grid=False):
+        """
+        :param points:
+        :type points:
+        :param grid:
+        :type grid:
+        """
         self.grid = grid
         self.seed_points = points
         self.bin_grid = None
 
-    def triangulate(self, points : ndarray = None):
+    def triangulate(self, points : npt.NDArray = None):
+        """
+        :param points:
+        :type points:
+        :return:
+        :rtype:
+        """
         if points is None:
             points = self.seed_points
 
-        normalised_points = normalize_points(points)
+        normalised_points = _normalize_points(points)
         bin_numbers = self.generate_bins_nums_2d(normalised_points, points)
-        sorted_points = sort_bins(points, bin_numbers)
-        binned_points = bin_points(sorted_points, np.sort(bin_numbers))
+        sorted_points = _sort_bins(points, bin_numbers)
+        binned_points = _bin_points(sorted_points, np.sort(bin_numbers))
 
         return binned_points
 
-    def generate_bin_grid(self, bin_indices : ndarray, points : ndarray):
+    def __generate_bin_grid(self, bin_indices : npt.NDArray, points : npt.NDArray) -> None:
+        """
+        :param bin_indices:
+        :type bin_indices:
+        :param points:
+        :type points:
+        :return:
+        :rtype:
+        """
         grid_n = max(np.max(bin_indices, axis=1)+1)
         max_r_x, max_r_y = np.max(points[:,0])/grid_n, np.max(points[:,1])/grid_n
         print(max_r_x, max_r_y)
@@ -122,12 +154,20 @@ class DelaunayV2:
 
         self.bin_grid = np.array(polygons)
 
-    def generate_bins_nums_2d(self, bin_indices, raw_points):
+    def generate_bins_nums_2d(self, bin_indices : npt.NDArray, raw_points : npt.NDArray) -> np.ndarray:
+        """
+        :param bin_indices:
+        :type bin_indices:
+        :param raw_points:
+        :type raw_points:
+        :return:
+        :rtype:
+        """
         num_points = raw_points.shape[0]
         n = int(np.sqrt(num_points))
 
         if self.grid:
-            self.generate_bin_grid(bin_indices, raw_points)
+            self.__generate_bin_grid(bin_indices, raw_points)
 
         bins = np.zeros(num_points, dtype=int)
         for i in range(num_points):

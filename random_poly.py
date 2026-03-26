@@ -4,40 +4,36 @@ Code by : Roäc
 
 import math, random
 from typing import List, Tuple, Any
+import numpy.typing as npt
+import numpy as np
 
 
 # random.seed(67)
 
-def generate_inscribed_square(center, radius: float | int) -> List:
-    x_sn = y_sn = 1
-    res = []
-    for i in range(2):
-        y_sn *= -1
+def __offset_center(center : npt.ArrayLike, offset_x : int | float , offset_y : int | float = None) -> np.ndarray:
+    if offset_y is None:
+        offset_x = offset_y
+    res = np.array([center[0] + offset_x, center[1] + offset_y])
 
-        for j in range(2):
-            x_sn *= -1
-
-            res.append([center[0] +  x_sn*radius, center[1] + y_sn*radius])
-
-    res[2], res[3] = res[3], res[2]
-    res.append([center[0] - radius, center[1] - radius])
     return res
 
-def generate_inscribed_rectangle_sym(center, rx, ry) -> List:
-    x_sn = y_sn = 1
+def generate_inscribed_square(center : npt.ArrayLike, radius : float | int) -> np.ndarray:
     res = []
-    for i in range(2):
-        y_sn *= -1
+    for i in range(1,3):
+        for j in range(1,3):
+            res.append(__offset_center(center, radius*(-1)**i, radius*(-1)**j))
 
-        for j in range(2):
-            x_sn *= -1
+    res.append(res[0])
+    return np.array(res)
 
-            res.append([center[0] +  x_sn*rx, center[1] + y_sn*ry])
+def generate_inscribed_rectangle_sym(center : npt.ArrayLike, rx : int | float, ry : int | float) -> np.ndarray:
+    res = []
+    for i in range(1,3):
+        for j in range(1,3):
+            res.append(__offset_center(center, rx*(-1)**i, ry*(-1)**j))
 
-    res[2], res[3] = res[3], res[2]
-    res.append([center[0] - rx, center[1] - ry])
-    print(res)
-    return res
+    res.append(res[0])
+    return np.array(res)
 
 def generate_polygon(center: Tuple[float, float], avg_radius: float,
                      irregularity: float, spikiness: float,
@@ -144,6 +140,8 @@ if __name__ == "__main__":
     # or .line() if you want to control the line thickness, or use both methods together!
     draw.line(vertices + [vertices[0]], width=2, fill=black)
 
-    img.show()
+    print(generate_inscribed_square([2,2], 2))
+
+    # img.show()
 
     # now you can save the image (img), or do whatever else you want with it.
