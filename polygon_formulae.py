@@ -9,14 +9,16 @@ def poly_signed_area_2d(vertices):
     res = x[:-1] * y[1:] - x[1:] * y[:-1]
     return np.abs(np.sum(res))*0.5
 
-def gen_circum_center(vertices):
+def gen_circum_center(vertices, get_radius = False) -> tuple[float, float] | tuple[tuple[float, float], float]:
     a, b, c = vertices
     d = 2*(a[0]*(b[1]-c[1])+b[0]*(c[1]-a[1])+c[0]*(a[1]-b[1]))
     u_x = (1/d)*(np.sum(a**2)*(b[1]-c[1])+np.sum(b**2)*(c[1]-a[1])+np.sum(c**2)*(a[1]-b[1]))
     u_y = (1/d)*(np.sum(a**2)*(c[0]-b[0])+np.sum(b**2)*(a[0]-c[0])+np.sum(c**2)*(b[0]-a[0]))
+    if get_radius:
+        return (u_x, u_y), __centroid_distance(vertices, (u_x,u_y))
     return u_x, u_y
 
-def centroid_distance(vertices, centroid):
+def __centroid_distance(vertices, centroid):
     a, b = centroid
     x, y = vertices[0][0], vertices[0][1]
     distance = np.sqrt((x-a)**2+(y-b)**2)
@@ -58,9 +60,9 @@ if __name__ == "__main__":
     # radius = centroid_distance(polygon, centroid)
     # print(centroid)
     # polygon = np.array([[3,2],[1,4],[5,4]])
-    centroid = gen_circum_center(polygon)
+    centroid, radius = gen_circum_center(polygon, True)
     print(centroid)
-    radius = centroid_distance(polygon, centroid)
+    # radius = centroid_distance(polygon, centroid)
 
     circle = patch.Circle(centroid, radius, color='r', fill=False)
 

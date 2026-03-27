@@ -10,7 +10,7 @@ import numpy as np
 
 # random.seed(67)
 
-def __offset_center(center : npt.ArrayLike, offset_x : int | float , offset_y : int | float = None) -> np.ndarray:
+def __offset_center(center : npt.ArrayLike, offset_x : int | float, offset_y : int | float | None = None) -> np.ndarray:
     if offset_y is None:
         offset_x = offset_y
     res = np.array([center[0] + offset_x, center[1] + offset_y])
@@ -19,20 +19,20 @@ def __offset_center(center : npt.ArrayLike, offset_x : int | float , offset_y : 
 
 def generate_inscribed_square(center : npt.ArrayLike, radius : float | int) -> np.ndarray:
     res = []
-    for i in range(1,3):
-        for j in range(1,3):
-            res.append(__offset_center(center, radius*(-1)**i, radius*(-1)**j))
-
-    res.append(res[0])
+    signs = [[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]
+    for i in range(5):
+        res.append(__offset_center(center, radius * signs[i][0], radius * signs[i][1]))
     return np.array(res)
 
-def generate_inscribed_rectangle_sym(center : npt.ArrayLike, rx : int | float, ry : int | float) -> np.ndarray:
-    res = []
-    for i in range(1,3):
-        for j in range(1,3):
-            res.append(__offset_center(center, rx*(-1)**i, ry*(-1)**j))
+def generate_inscribed_rectangle_sym(center : npt.ArrayLike, rx : int | float | npt.ArrayLike, ry : int | float | None = None) -> np.ndarray:
+    if ry is None:
+        rx, ry = rx
 
-    res.append(res[0])
+    res = []
+    signs = [[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]
+    for i in range(5):
+        res.append(__offset_center(center, rx*signs[i][0], ry*signs[i][1]))
+
     return np.array(res)
 
 def generate_polygon(center: Tuple[float, float], avg_radius: float,
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     # or .line() if you want to control the line thickness, or use both methods together!
     draw.line(vertices + [vertices[0]], width=2, fill=black)
 
-    print(generate_inscribed_square([2,2], 2))
+    print(generate_inscribed_rectangle_sym([2,2], 2,2))
 
     # img.show()
 
